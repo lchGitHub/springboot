@@ -1,0 +1,99 @@
+# dev 开发环境
+# prod 生产环境
+# sit 测试环境
+#默认的配置文件，这里设置为dev(开发环境)，在pro(生产环境)时，可以使用 --spring.profiles.active=prod运行
+spring:
+  application:
+    name: lac-service-bus
+  profiles:
+    active: local
+  aop:
+    proxy-target-class: true
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    date-format-deser: yyyy-MM-dd, yyyy-MM-dd HH:mm:ss
+
+logging:
+  config: classpath:logback-boot.xml
+
+endpoints: 
+  cors: 
+    allowed-methods: GET, POST, PUT, DELETE
+    allowed-origins: http://dms-dev.aicloudata.com
+
+server:
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/javascript,application/javascript,text/html,text/xml,text/plain,text/css
+
+LoginInterceptor:
+  loginURL: /login.html
+  ignoreUirs: 
+    - /
+  ignoreUirPrefixs: 
+    - /
+  timeout: 1800
+
+mybatis: 
+  mapperLocations: classpath:mapper/*.xml
+---
+server:
+  port: 8080
+spring:
+  profiles: local
+  datasource:
+    driverClass: com.mysql.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/dms_dev?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true
+    username: root
+    password: root
+    initialSize: 3
+    maxTotal: 20
+    maxIdle: 5
+    dialect: mysql
+  
+---
+server:
+  port: 8080
+spring:
+  profiles: eve-cb
+  datasource:
+    driverClass: com.mysql.jdbc.Driver
+    url: jdbc:mysql://192.168.1.4:3306/eve?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true&useSSL=false
+    username: eve
+    password: s9IRiUpNJq7xFriY
+    initialSize: 30
+    maxTotal: 100
+    maxIdle: 20
+    dialect: mysql
+    
+---
+server:
+  port: 8080
+spring:
+  profiles: prod-cb
+  datasource:
+    driverClass: com.mysql.jdbc.Driver
+    url: jdbc:mysql://192.168.1.1:3306/dms_prod?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true
+    username: dms_prod
+    password: R3jjandbpWgqHCq8b(z{jm9u33eeM}KT
+    initialSize: 30
+    maxTotal: 100
+    maxIdle: 20
+    dialect: mysql
+    
+---
+server:
+  port: 8081
+spring:
+  profiles: test-cb
+  datasource:
+    driverClass: com.mysql.jdbc.Driver
+    url: jdbc:mysql://192.168.1.51:3306/dms_test?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true
+    username: dms_dev
+    password: AulhKW*uTPxC0KZZ]*5yP9OP~$#MsaWH
+    initialSize: 30
+    maxTotal: 100
+    maxIdle: 20
+    dialect: mysql
+  

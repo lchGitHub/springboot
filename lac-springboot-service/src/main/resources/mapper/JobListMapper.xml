@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="lac.job.mapper.JobListMapper">
+
+	<resultMap id="JobBean" type="lac.job.bean.JobBean">
+		<result property="cronExp" jdbcType="VARCHAR" column="stJobCronExp" />
+		<result property="serviceName" jdbcType="VARCHAR" column="stMethodName" />
+		<result property="desc" jdbcType="VARCHAR" column="stDesc" />
+	</resultMap>
+
+	<select id="getJobList" resultMap="JobBean">
+		SELECT 
+		  j.stJobCronExp,
+		  e.stMethodName,
+		  j.stDesc 
+		FROM
+		  st_job j,
+		  st_event e 
+		WHERE j.guid = e.stJobId 
+		  AND j.stEnable = 1 
+	</select>
+</mapper>

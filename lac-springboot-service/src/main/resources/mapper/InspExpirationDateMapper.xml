@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="lac.job.mapper.InspExpirationDateMapper">
+
+	<!-- 客户关怀-年检提醒数据  -->
+	<update id="updateInspExpirationDate">
+	<![CDATA[  
+	SET SQL_SAFE_UPDATES=0;
+		UPDATE 
+		  mt_vehicle 
+		SET
+		  DT_INSP_EXPIRATION_DATE = DATE_ADD(
+		    DT_INSP_EXPIRATION_DATE,
+		    INTERVAL IF(
+		      TIMESTAMPDIFF(
+		        YEAR,
+		        DT_INSP_EXPIRATION_DATE,
+		        NOW()
+		      ) % 2 = 0,
+		      TIMESTAMPDIFF(
+		        YEAR,
+		        DT_INSP_EXPIRATION_DATE,
+		        NOW()
+		      ) + 2,
+		      TIMESTAMPDIFF(
+		        YEAR,
+		        DT_INSP_EXPIRATION_DATE,
+		        NOW()
+		      ) + 1
+		    ) YEAR
+		  ) 
+		WHERE DT_INSP_EXPIRATION_DATE < NOW();
+		  ]]>
+	</update>
+	<insert id="insertInspExpirationReminder">
+	<![CDATA[  
+	INSERT INTO tt_reminder (
+	  guid,
+	  ST_CLIENT_ID,
+	  ST_ORG_ID,
+	  ST_REMINDER_TYPE,
+	  ST_REMINDER_CATEGORY,
+	  DT_REMINDER_START_DATE,
+	  DT_REMINDER_END_DATE,
+	  ST_REMINDER_STATUS,
+	  DT_BIZ_DUE_DATE,
+	  ST_CUSTOMER_ID,
+	  ST_VEHICLE_ID,
+	  ST_ENABLE_FLAG,
+	  ST_CREATED_BY,
+	  ST_UPDATED_BY,
+	  DT_CREATED_TIME,
+	  DT_UPDATED_TIME
+	) 
+	(SELECT 
+	  REPLACE(UUID(), '-', ''),
+	  ST_CLIENT_ID,
+	  ST_ORG_ID,
+	  'System_ReminderType_001',
+	  'System_ReminderCate_013',
+	  NOW(),
+	  DATE_ADD(NOW(), INTERVAL 30 DAY),
+	  'System_ReminderStatus_001',
+	  DT_INSP_EXPIRATION_DATE,
+	  (SELECT 
+	    ST_CUSTOMER_ID 
+	  FROM
+	    mt_customer_vehicle 
+	  WHERE ST_ENABLE_FLAG = 'System_EnableFlag_1' 
+	    AND ST_VEHICLE_ID = v.guid 
+	    AND st_client_id = v.st_client_id 
+	    AND st_org_id = v.st_org_id 
+	  LIMIT 1),
+	  guid,
+	  'System_EnableFlag_1',
+	  'system',
+	  'system',
+	  NOW(),
+	  NOW() 
+	FROM
+	  mt_vehicle v 
+	WHERE DATE_SUB(
+	    DT_INSP_EXPIRATION_DATE,
+	    INTERVAL 
+	    (SELECT 
+	      ST_BIZPARAM_VALUE 
+	    FROM
+	      pt_biz_param 
+	    WHERE v.st_client_id = st_client_id 
+	      AND st_org_id = v.st_org_id 
+	      AND st_bizparam_code = 'BP_V_INSP_REMINDER_BE_DAYS' limit 1) DAY
+	  ) < NOW() 
+	  AND NOT EXISTS 
+	  (SELECT 
+	    guid 
+	  FROM
+	    tt_reminder r 
+	  WHERE r.st_vehicle_id = v.guid 
+	    AND r.DT_BIZ_DUE_DATE = DT_INSP_EXPIRATION_DATE 
+	    AND ST_REMINDER_CATEGORY = 'System_ReminderCate_013'))
+	]]>
+	</insert>
+</mapper>

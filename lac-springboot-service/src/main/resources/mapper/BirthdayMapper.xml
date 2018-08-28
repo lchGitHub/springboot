@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="lac.job.mapper.BirthdayMapper">
+
+	<!-- 客户关怀-生日提醒数据 -->
+	<insert id="insertBirthdayReminder">
+	<![CDATA[  
+	INSERT INTO tt_reminder (
+	  guid,
+	  ST_CLIENT_ID,
+	  ST_ORG_ID,
+	  ST_REMINDER_TYPE,
+	  ST_REMINDER_CATEGORY,
+	  DT_REMINDER_START_DATE,
+	  DT_REMINDER_END_DATE,
+	  ST_REMINDER_STATUS,
+	  DT_BIZ_DUE_DATE,
+	  ST_CUSTOMER_ID,
+	  ST_VEHICLE_ID,
+	  ST_ENABLE_FLAG,
+	  ST_CREATED_BY,
+	  ST_UPDATED_BY,
+	  DT_CREATED_TIME,
+	  DT_UPDATED_TIME
+	) 
+	SELECT 
+	  REPLACE(UUID(), '-', ''),
+	  c.ST_CLIENT_ID,
+	  c.ST_ORG_ID,
+	  'System_ReminderType_001',
+	  'System_ReminderCate_021',
+	  NOW(),
+	  ADDDATE(
+	    CONCAT(
+	      YEAR(NOW()),
+	      '-',
+	      MONTH(c.DT_DATE_OF_BIRTH),
+	      '-',
+	      DAY(c.DT_DATE_OF_BIRTH),
+	      ' 23:59:59'
+	    ),
+	    INTERVAL 1 DAY
+	  ),
+	  'System_ReminderStatus_001',
+	  CONCAT(
+	    YEAR(NOW()),
+	    '-',
+	    MONTH(c.DT_DATE_OF_BIRTH),
+	    '-',
+	    DAY(c.DT_DATE_OF_BIRTH),
+	    ' 23:59:59'
+	  ),
+	  c.guid,
+	  MAX(cv.ST_VEHICLE_ID),
+	  'System_EnableFlag_1',
+	  'system',
+	  'system',
+	  NOW(),
+	  NOW() 
+	FROM
+	  mt_customer c,
+	  pt_biz_param bp,
+	  mt_customer_vehicle cv 
+	WHERE 1 = 1 
+	  AND c.st_client_id = bp.st_client_id 
+	  AND c.st_org_id = bp.st_org_id 
+	  AND c.st_client_id = cv.st_client_id 
+	  AND c.guid = cv.st_customer_id 
+	  AND bp.st_bizparam_code = 'BP_C_BIRTH_REMINDER_BE_DAYS' 
+	  AND c.DT_DATE_OF_BIRTH IS NOT NULL 
+	  AND cv.st_enable_flag = 'System_EnableFlag_1' 
+	  AND DATE_SUB(
+	    CONCAT(
+	      YEAR(NOW()),
+	      '-',
+	      MONTH(DT_DATE_OF_BIRTH),
+	      '-',
+	      DAY(DT_DATE_OF_BIRTH),
+	      ' 23:59:59'
+	    ),
+	    INTERVAL bp.ST_BIZPARAM_VALUE DAY
+	  ) < NOW() 
+	  AND NOT EXISTS 
+	  (SELECT 
+	    guid 
+	  FROM
+	    tt_reminder r 
+	  WHERE r.st_customer_id = c.guid 
+	    AND r.DT_BIZ_DUE_DATE = CONCAT(
+	      YEAR(NOW()),
+	      '-',
+	      MONTH(DT_DATE_OF_BIRTH),
+	      '-',
+	      DAY(DT_DATE_OF_BIRTH),
+	      ' 23:59:59'
+	    ) 
+	    AND ST_REMINDER_CATEGORY = 'System_ReminderCate_021') 
+	GROUP BY c.guid 
+	]]>
+	</insert>
+</mapper>

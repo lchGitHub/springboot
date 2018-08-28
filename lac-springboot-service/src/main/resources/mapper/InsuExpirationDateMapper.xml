@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="lac.job.mapper.InsuExpirationDateMapper">
+
+	<!-- 客户关怀-保险提醒数据-刷新 -->
+	<update id="updateInsuExpirationDate">
+	<![CDATA[  
+		SET SQL_SAFE_UPDATES=0;
+		update 
+		  mt_vehicle 
+		set
+		  DT_INSU_EXPIRATION_DATE = if(
+		    DT_INSU_EXPIRATION_DATE is null,
+		    IF(
+		      DT_INSU_DATE IS NOT NULL 
+		      AND DT_INSU_DATE >= NOW(),
+		      DATE_ADD(
+		        DT_INSU_DATE,
+		        INTERVAL CEIL(
+		          DATEDIFF(NOW(), DT_INSU_EXPIRATION_DATE) / 365
+		        ) YEAR
+		      ),
+		      NULL
+		    ),
+		    if(
+		      DT_INSU_EXPIRATION_DATE < now(),
+		      DATE_ADD(
+		        DT_INSU_EXPIRATION_DATE,
+		        INTERVAL CEIL(
+		          DATEDIFF(NOW(), DT_INSU_EXPIRATION_DATE) / 365
+		        ) YEAR
+		      ),
+		      DT_INSU_EXPIRATION_DATE
+		    )
+		  );
+		  ]]>
+	</update>
+	<insert id="insertInsuExpirationReminder">
+	<![CDATA[  
+	INSERT INTO tt_reminder (
+	  guid,
+	  ST_CLIENT_ID,
+	  ST_ORG_ID,
+	  ST_REMINDER_TYPE,
+	  ST_REMINDER_CATEGORY,
+	  DT_REMINDER_START_DATE,
+	  DT_REMINDER_END_DATE,
+	  ST_REMINDER_STATUS,
+	  DT_BIZ_DUE_DATE,
+	  ST_CUSTOMER_ID,
+	  ST_VEHICLE_ID,
+	  ST_ENABLE_FLAG,
+	  ST_CREATED_BY,
+	  ST_UPDATED_BY,
+	  DT_CREATED_TIME,
+	  DT_UPDATED_TIME
+	) 
+	(SELECT 
+	  REPLACE(UUID(), '-', ''),
+	  ST_CLIENT_ID,
+	  ST_ORG_ID,
+	  'System_ReminderType_001',
+	  'System_ReminderCate_012',
+	  NOW(),
+	  DATE_ADD(NOW(), INTERVAL 30 DAY),
+	  'System_ReminderStatus_001',
+	  DT_INSU_EXPIRATION_DATE,
+	  (SELECT 
+	    ST_CUSTOMER_ID 
+	  FROM
+	    mt_customer_vehicle 
+	  WHERE ST_ENABLE_FLAG = 'System_EnableFlag_1' 
+	    AND ST_VEHICLE_ID = v.guid 
+	    AND st_client_id = v.st_client_id 
+	    AND st_org_id = v.st_org_id 
+	  LIMIT 1),
+	  guid,
+	  'System_EnableFlag_1',
+	  'system',
+	  'system',
+	  NOW(),
+	  NOW() 
+	FROM
+	  mt_vehicle v 
+	WHERE DATE_SUB(
+	    DT_INSU_EXPIRATION_DATE,
+	    INTERVAL 
+	    (SELECT 
+	      ST_BIZPARAM_VALUE 
+	    FROM
+	      pt_biz_param 
+	    WHERE v.st_client_id = st_client_id 
+	      AND st_org_id = v.st_org_id 
+	      AND st_bizparam_code = 'BP_V_INSU_REMINDER_BE_DAYS' limit 1) DAY
+	  ) < NOW() 
+	  AND NOT EXISTS 
+	  (SELECT 
+	    guid 
+	  FROM
+	    tt_reminder r 
+	  WHERE r.st_vehicle_id = v.guid 
+	    AND r.DT_BIZ_DUE_DATE = DT_INSU_EXPIRATION_DATE 
+	    AND ST_REMINDER_CATEGORY = 'System_ReminderCate_012'))
+	]]>
+	</insert>
+</mapper>

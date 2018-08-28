@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="lac.job.mapper.IdleStatusMapper">
+
+	<!-- 呆滞状态 -->
+	<update id="updateIdleStatus">
+	<![CDATA[  
+		SET SQL_SAFE_UPDATES=0;
+		UPDATE 
+		  tt_metirial_inventory INV,
+		  mt_product P 
+		SET
+		  INV.ST_IDLE_STATUS = 'Inventory_MtrlInvIdleStatus_002' 
+		WHERE P.ST_CLIENT_ID = INV.ST_CLIENT_ID 
+		  AND P.GUID = INV.ST_PROD_ID 
+		  AND P.ST_IDLE_TIME > 0 
+		  AND INV.ST_IDLE_STATUS <> 'Inventory_MtrlInvIdleStatus_002' 
+		  AND NOT EXISTS 
+		  (SELECT 
+		    1 
+		  FROM
+		    tt_mtrlinv_journal_item MJI 
+		  WHERE MJI.ST_CLIENT_ID = INV.ST_CLIENT_ID 
+		    AND MJI.ST_PROD_ID = INV.ST_PROD_ID 
+		    AND MJI.DT_CREATED_TIME IS NOT NULL 
+		    AND DATEDIFF(NOW(), MJI.DT_CREATED_TIME) < P.ST_IDLE_TIME);
+		  ]]>
+	</update>
+</mapper>

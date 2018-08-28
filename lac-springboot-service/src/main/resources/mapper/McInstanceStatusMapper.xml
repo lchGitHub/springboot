@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="lac.job.mapper.McInstanceStatusMapper">
+
+	<!-- 会员卡过期 -->
+	<update id="updateMcInstanceStatus">
+	<![CDATA[  
+	SET SQL_SAFE_UPDATES=0;
+		UPDATE mt_mc_instance SET ST_MC_INSTANCE_STATUS = 'Membership_MCInstanceStatus_005' WHERE DT_EXPIRY_DATE < NOW();
+		]]>
+	</update>
+</mapper>
